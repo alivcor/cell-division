@@ -1,0 +1,10 @@
+frame_num = 5;
+camera_num = 1;
+nvideo = squeeze(cDIC(:,:,camera_num,frame_num));
+nvideo = nvideo/max(max(max((nvideo))));
+% imshow(nvideo(:,:,5));
+y = squeeze(data(:,frame_num,3));
+x = squeeze(data(:,frame_num,4));
+imshow(nvideo(:,:));
+hold on;
+plot(x,y,'r.','Color',[1 0 0],'MarkerSize',20);
