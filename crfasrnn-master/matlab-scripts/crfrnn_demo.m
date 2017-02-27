@@ -20,7 +20,7 @@ if exist(model_file, 'file') ~= 2
     error('You need a network model file. Please download our default model by running ./download_trained_model.sh');
 end
 
-use_gpu = 1; % Set this to 0 if you don't have a GPU.
+use_gpu = 0; % Set this to 0 if you don't have a GPU.
 gpu_id = 0;% which gpu device id you are using?
 
 addpath(fullfile(caffe_path, 'matlab'));
