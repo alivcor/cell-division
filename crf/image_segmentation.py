@@ -34,6 +34,7 @@ data_train = pickle.load(open("data_train_dict.pickle"))
 C = 0.01
 
 n_states = 21
+
 print("number of samples: %s" % len(data_train['X']))
 class_weights = 1. / np.bincount(np.hstack(data_train['Y']))
 class_weights *= 21. / np.sum(class_weights)
