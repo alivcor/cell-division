@@ -1,24 +1,3 @@
-"""
-===========================================
-Semantic Image Segmentation on Pascal VOC
-===========================================
-This example demonstrates learning a superpixel CRF
-for semantic image segmentation.
-To run the experiment, please download the pre-processed data from:
-http://www.ais.uni-bonn.de/deep_learning/downloads.html
-
-The data consists of superpixels, unary potentials, and the connectivity
-structure of the superpixels.
-The unary potentials were originally provided by Philipp Kraehenbuehl:
-http://graphics.stanford.edu/projects/densecrf/
-
-The superpixels were extracted using SLIC.
-The code for generating the connectivity graph and edge features will be made
-available soon.
-
-This example does not contain the proper evaluation on pixel level, as that
-would need the Pascal VOC 2010 dataset.
-"""
 import numpy as np
 try:
     import cPickle as pickle
@@ -34,10 +13,16 @@ data_train = pickle.load(open("data_train.pickle", 'rb'))
 
 print(type(data_train))
 print(len(data_train))
-print("-------------")
+print("-------------\n\n")
 for key in data_train:
     print key
+    val = data_train[key]
+    print "Length of val : ", len(val)
+    print "Shape of val : ", (np.array(val)).shape
+    print "Shape of each element in val : ", (np.array(val[0:1])).shape
+    print "-------------------"
 
+print(max(data_train['Y'][0]))
 # C = 0.01
 #
 # n_states = 21
