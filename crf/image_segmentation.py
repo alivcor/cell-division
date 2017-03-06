@@ -32,7 +32,12 @@ from pystruct.utils import SaveLogger
 
 data_train = pickle.load(open("data_train.pickle", 'rb'))
 
-print(data_train)
+print(type(data_train))
+print(len(data_train))
+print("-------------")
+for key in data_train:
+    print key
+
 # C = 0.01
 #
 # n_states = 21
