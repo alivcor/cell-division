@@ -30,7 +30,7 @@ import pystruct.models as crfs
 from pystruct.utils import SaveLogger
 
 
-data_train = pickle.load(open("data_train_dict.pickle"))
+data_train = pickle.load(open("data_train.pickle"))
 C = 0.01
 
 n_states = 21
