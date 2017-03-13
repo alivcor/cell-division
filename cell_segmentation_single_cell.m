@@ -17,7 +17,7 @@ close all;
 
 %I = squeeze(trX(1,:,:));
 
-I = squeeze(cDIC(:,:,5,70)); % was 5,20
+I = squeeze(cDIC(:,:,1,10)); % was 5,20
 
 I = I/max(max(I));
 

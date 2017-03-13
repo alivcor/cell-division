@@ -4,10 +4,18 @@ try:
 except ImportError:
     import pickle
 from PIL import Image
-
+from skimage.segmentation import slic
+import cv2
 from pystruct import learners
 import pystruct.models as crfs
 from pystruct.utils import SaveLogger
+
+
+#extract edges using slic
+img = cv2.imread("SAMPLE.jpg")
+segments = slic(img, n_segments=92, compactness=10)
+print(np.array(segments).shape)
+
 
 
 data_train = pickle.load(open("data_train.pickle", 'rb'))
@@ -23,6 +31,7 @@ for key in data_train:
     print "Shape of each element in val : ", (np.array(val[0:1])).shape
     print "-------------------"
 
+print(np.array(data_train['Y'][0]))
 print(np.array(data_train['X']).shape)
 print(np.array(data_train['X'])[0][0].shape)
 print(np.array(data_train['X'])[0][1].shape)
