@@ -3,6 +3,7 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
+from PIL import Image
 
 from pystruct import learners
 import pystruct.models as crfs
@@ -22,7 +23,12 @@ for key in data_train:
     print "Shape of each element in val : ", (np.array(val[0:1])).shape
     print "-------------------"
 
-print(max(data_train['Y'][0]))
+print(np.array(data_train['X']).shape)
+print(np.array(data_train['X'])[0][0].shape)
+print(np.array(data_train['X'])[0][1].shape)
+print(np.array(data_train['X'])[0][2].shape)
+
+#
 # C = 0.01
 #
 # n_states = 21
