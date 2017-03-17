@@ -13,6 +13,7 @@ Philip Torr (philip.torr@eng.ox.ac.uk)
 For more information about CRF-RNN, please vist the project website http://crfasrnn.torr.vision.
 """
 
+
 caffe_root = '../caffe/'
 import sys, getopt
 sys.path.insert(0, caffe_root + 'python')
