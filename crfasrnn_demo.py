@@ -99,8 +99,8 @@ def crfasrnn_segmenter(model_file, pretrained_file, gpudevice, inputs):
     return predictions[0].argmax(axis=0).astype(np.uint8)
 
 def run_crfasrnn(inputfile, outputfile, gpudevice):
-    MODEL_FILE = 'TVG_CRFRNN_new_deploy.prototxt'
-    PRETRAINED = 'TVG_CRFRNN_COCO_VOC.caffemodel'
+    MODEL_FILE = 'python-scripts/TVG_CRFRNN_new_deploy.prototxt'
+    PRETRAINED = 'python-scripts/TVG_CRFRNN_COCO_VOC.caffemodel'
     IMAGE_FILE = inputfile
 
     input_image = 255 * caffe.io.load_image(IMAGE_FILE)
@@ -153,9 +153,9 @@ def resizeImage(image):
         return image
 
 def main(argv):
-   inputfile = 'input.jpg'
-   outputfile = 'output.png'
-   gpu_device = 0 # use -1 to run only on CPU, use 0-3[7] to run on GPU
+   inputfile = 'python-scripts/input.jpg'
+   outputfile = 'python-scripts/outputm.png'
+   gpu_device = -1 # use -1 to run only on CPU, use 0-3[7] to run on GPU
    try:
       opts, args = getopt.getopt(argv,'hi:o:g:',["ifile=","ofile=","gpu="])
    except getopt.GetoptError:
