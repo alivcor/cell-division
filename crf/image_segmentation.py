@@ -16,15 +16,15 @@ from skimage.segmentation import mark_boundaries
 from skimage.util import img_as_float
 import matplotlib.pyplot as plt
 
-#Extract edges using slic
-# img = cv2.imread("original_sc.jpg")
-# segments = slic(img, n_segments=92, compactness=10)
-# print(np.array(segments).shape)
-# fig = plt.figure("Superpixels")
-# ax = fig.add_subplot(1, 1, 1)
-# ax.imshow(mark_boundaries(img_as_float(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)), segments))
-# plt.axis("off")
-# plt.show()
+Extract edges using slic
+img = cv2.imread("original_sc.jpg")
+segments = slic(img, n_segments=92, compactness=10)
+print(np.array(segments).shape)
+fig = plt.figure("Superpixels")
+ax = fig.add_subplot(1, 1, 1)
+ax.imshow(mark_boundaries(img_as_float(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)), segments))
+plt.axis("off")
+plt.show()
 
 
 #data_train is a dict : please download the pre-processed data from: http://www.ais.uni-bonn.de/deep_learning/downloads.html
