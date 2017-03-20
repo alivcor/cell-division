@@ -79,9 +79,9 @@ C = 0.01
 
 n_states = 21
 
-print("number of samples: %s" % len(data_train['X']))
-class_weights = 1. / np.bincount(np.hstack(data_train['Y']))
-class_weights *= 21. / np.sum(class_weights)
+print("number of samples: %s" % len(gray_img_vc))
+class_weights = 1. / np.bincount(np.hstack(mask_img_vc))
+class_weights *= 1. / np.sum(class_weights)
 print(class_weights)
 
 model = crfs.EdgeFeatureGraphCRF(inference_method='max-product',
@@ -96,14 +96,15 @@ ssvm = learners.NSlackSSVM(
     tol=0.0001, show_loss_every=5,
     logger=SaveLogger(experiment_name + ".pickle", save_every=100),
     inactive_threshold=1e-3, inactive_window=10, batch_size=100)
-ssvm.fit(data_train['X'], data_train['Y'])
+ssvm.fit(gray_img_vc, gray_mask_img)
 
-data_val = pickle.load(open("data_val_dict.pickle"))
-y_pred = ssvm.predict(data_val['X'])
-
-# we throw away void superpixels and flatten everything
-y_pred, y_true = np.hstack(y_pred), np.hstack(data_val['Y'])
-y_pred = y_pred[y_true != 255]
-y_true = y_true[y_true != 255]
-
-print("Score on validation set: %f" % np.mean(y_true == y_pred))
+print "Model trained !"
+# data_val = pickle.load(open("data_val_dict.pickle"))
+# y_pred = ssvm.predict(data_val['X'])
+#
+# # we throw away void superpixels and flatten everything
+# y_pred, y_true = np.hstack(y_pred), np.hstack(data_val['Y'])
+# y_pred = y_pred[y_true != 255]
+# y_true = y_true[y_true != 255]
+#
+# print("Score on validation set: %f" % np.mean(y_true == y_pred))
