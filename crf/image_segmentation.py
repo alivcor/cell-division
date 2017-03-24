@@ -26,21 +26,26 @@ from skimage.segmentation import mark_boundaries
 from skimage.util import img_as_float
 import matplotlib.pyplot as plt
 
-# Extract edges using slic
+# load img and img mask
 img = cv2.imread("original_sc.jpg")
 gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-print "gray_img.shape", gray_img.shape
-# segments = slic(img, n_segments=200, compactness=10)
-# print(np.array(segments).shape)
-# fig = plt.figure("Superpixels")
-# ax = fig.add_subplot(1, 1, 1)
-# ax.imshow(mark_boundaries(img_as_float(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)), segments))
-# plt.axis("off")
-# plt.show()
-
 mask_img = cv2.imread("mask_sc.png")
 gray_mask_img = cv2.cvtColor(mask_img, cv2.COLOR_BGR2GRAY)
+print "gray_img.shape", gray_img.shape
 print "gray_mask_img.shape",gray_mask_img.shape
+
+# Extract edges using slic
+segments = slic(img, n_segments=200, compactness=10)
+print("Shape of the variable segments:",np.array(segments).shape)
+print("mark_boundaries returns : ", mark_boundaries(img_as_float(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)), segments))
+fig = plt.figure("Superpixels")
+ax = fig.add_subplot(1, 1, 1)
+ax.imshow(mark_boundaries(img_as_float(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)), segments))
+plt.axis("off")
+plt.show()
+
+
+
 
 
 data_train = pickle.load(open("data_train.pickle", 'rb'))
