@@ -67,7 +67,7 @@ print "Pulzuhr Graph :"
 print crf_graph.vertices, crf_graph.edges
 
 
-formattedData = generateTrainData(graph=crf_graph, segments=segments, avg_orig, avg_mask)
+formattedData = generateTrainData(orig_img=orig_img, mask_img=mask_img, graph=crf_graph, segments=segments, avg_orig= avg_orig, avg_mask=avg_mask, cell_pixel_labels=cell_pixel_labels)
 
 
 

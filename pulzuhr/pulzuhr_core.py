@@ -1,9 +1,32 @@
 import numpy as np
+import skimage.feature as skf
+
 
 class CRFGraph:
     def __init__(self, vertset, eset):
         self.vertices = vertset
         self.edges = eset
+
+
+##########################################################
+# KL Divergence
+# Code snippet taken from: http://scikit-image.org/docs/dev/auto_examples/plot_local_binary_pattern.html
+##########################################################
+def kullback_leibler_divergence(p, q):
+    p = np.asarray(p)
+    q = np.asarray(q)
+    filt = np.logical_and(p != 0, q != 0)
+    return np.sum(p[filt] * np.log2(p[filt] / q[filt]))
+
+
+##################################################################
+# Compute the chi-squared distance
+# Code snippet taken from: http://www.pyimagesearch.com/2014/07/14/3-ways-compare-histograms-using-opencv-python/
+##################################################################
+def chi2_distance(histA, histB, eps=1e-10):
+    d = 0.5 * np.sum([((a - b) ** 2) / (a + b + eps)
+                         for (a, b) in zip(histA, histB)])
+    return d
 
 
 def constructCRFGraph(grid):
@@ -31,7 +54,42 @@ def constructCRFGraph(grid):
 
     return CRFGraph(vertices, edges)
 
-def generateTrainData(graph, segments, avg_orig, avg_mask):
+
+def getHistogramFeatures(bgrImage, centerY, centerX, forUnaryFeature=False):
+    # print bgrImage.shape
+    # print str(centerY) + ' '  + str(centerX)
+    patchSize = 96
+    patchHalfSize = patchSize / 2
+
+    patch = np.zeros((patchSize, patchSize, 3), dtype=np.float32)
+
+    # construct patch
+    for i in range(centerY - patchHalfSize, centerY + patchHalfSize):
+        for j in range(centerX - patchHalfSize, centerX + patchHalfSize):
+            if i >= 0 and j >= 0 and i < bgrImage.shape[0] and j < bgrImage.shape[1]:
+                patch[i - (centerY - patchHalfSize)][j - (centerX - patchHalfSize)] = bgrImage[i][j]
+
+    # Histogram of intensity values
+    hist = cv2.calcHist(patch, [0, 1, 2], None, [12, 12, 12], [0, 256, 0, 256, 0, 256])
+    hist = cv2.normalize(hist, cv2.NORM_L2).flatten()
+
+    grayPatch = cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY)
+
+    if forUnaryFeature:
+        # Histogram of Oriented Gradients
+        hog = skf.hog(grayPatch, orientations=9, pixels_per_cell=(8, 8), cells_per_block=(3, 3), visualise=False,
+                      transform_sqrt=True)
+        return hist, hog
+    else:
+        # Histogram of Local Binary Pattern
+        lbp = skf.local_binary_pattern(grayPatch, 24, 3, method='nri_uniform')
+        n_bins = lbp.max() + 1
+        lbphist, _ = np.histogram(lbp, normed=True, bins=n_bins.astype(np.int),
+                                     range=(0, n_bins.astype(np.int)))
+        return hist, lbphist
+
+
+def generateTrainData(orig_img, mask_img, graph, segments, avg_orig, avg_mask, cell_pixel_labels):
     meshX, meshY = np.mgrid[:segments.shape[0], :segments.shape[1]]
     centers = dict()
     for v in graph.vertices:
@@ -47,16 +105,16 @@ def generateTrainData(graph, segments, avg_orig, avg_mask):
     for v in graph.vertices:
         # unary feature - average rgb of superpixel
         avg_rgb2 = avg_orig[int(centers[v][1])][int(centers[v][0])]
-        hist, hogFeatures = imagesegmentation.getHistogramFeatures(bgrImage, int(centers[v][1]), int(centers[v][0]),
+        hist, hogFeatures = getHistogramFeatures(orig_img, int(centers[v][1]), int(centers[v][0]),
                                                                    forUnaryFeature=True)
         node_feature = np.concatenate([avg_rgb2, hist, hogFeatures])
         n_features.append(node_feature)
 
         minEuclideanDistance = np.inf  # simulate infinity
         pixelClass = -1
-        for i in range(0, len(pixelClasses)):
+        for i in range(0, len(cell_pixel_labels)):
             # set the label of the superpixel to the pixelClass with minimum euclidean distance
-            dist = numpy.linalg.norm(avg_label[int(centers[v][1])][int(centers[v][0])] - pixelClasses[i])
+            dist = np.linalg.norm(avg_mask[int(centers[v][1])][int(centers[v][0])] - pixelClasses[i])
             if dist < minEuclideanDistance:
                 pixelClass = i
                 minEuclideanDistance = dist
@@ -90,5 +148,7 @@ def generateTrainData(graph, segments, avg_orig, avg_mask):
         pairwise_feature = np.array([dist, histogramDist, textureSimilarity])
         edge_features.append(pairwise_feature)
 
-    data_train_x.append((np.array(n_features), np.array(edges), np.array(edge_features)))
+    data_train_x.append((np.array(n_features), np.array(graph.edges), np.array(edge_features)))
     data_train_y.append(np.array(n_labels))
+
+    return data_train_x, data_train_y
