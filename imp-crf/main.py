@@ -221,7 +221,6 @@ def evaluatePerformance(clf, datasetX, datasetY):
         precision += precision_score(y_pred[i], datasetY[i])
         recall += recall_score(y_pred[i], datasetY[i])
         f1 += f1_score(y_pred[i], datasetY[i])
-        # jaccard += jaccard_similarity_score(y_pred[i], datasetY[i])
 
     print 'Superpixelwise Accuracy: ' + str(accuracy / len(y_pred))
     print 'Superpixelwise Precision: ' + str(precision / len(y_pred))
@@ -271,15 +270,14 @@ def getCellAccuracy(a, b) :
 
 def segment_image(orig_file, mask_file, pixelClasses = pixel_class_arr, crfmodel = cellsCRF) :
     start_time = time.time()
-    
-    # Read RGB and label image
+
     image = img_as_float(skimageIO.imread(orig_file))
-    bgrImage = cv2.imread(orig_file, cv2.IMREAD_COLOR)
+    rgb_img = cv2.imread(orig_file, cv2.IMREAD_COLOR)
 
-    if len(image.shape) == 2 : 
-                image = color.gray2rgb(image)
+    if len(image.shape) == 2:
+        image = color.gray2rgb(image)
 
-    # Derive superpixels and get their average RGB component
+    # get superpixels using slic tool
     segments = slic(image, n_segments =500, sigma = 1.0)
     rgb_segments = img_as_ubyte(mark_boundaries(image, segments))
     avg_rgb = color.label2rgb(segments, image, kind='avg') 
@@ -292,31 +290,28 @@ def segment_image(orig_file, mask_file, pixelClasses = pixel_class_arr, crfmodel
         labelImageRGB = labelImage
     label_segments = img_as_ubyte(mark_boundaries(labelImageRGB, segments))
     avg_label = color.label2rgb(segments, labelImageRGB, kind='avg')
-     
-  
 
-    # Create graph of superpixels and compute their centers
+    # superpixel graph
     vertices, edges = create_graph(segments)
     gridx, gridy = np.mgrid[:segments.shape[0], :segments.shape[1]]
     centers = dict()
     for v in vertices:
         centers[v] = [gridy[segments == v].mean(), gridx[segments == v].mean()]
 
-    xInstance = []
-    yInstance = []
+    train_x = []
+    train_y = []
     n_features = []            
     n_labels = []
     edge_features = []
-    
-    
+
     for v in vertices:
-        # unary feature - average rgb of superpixel
+        # average intensity
         avg_rgb2 = avg_rgb[int(centers[v][1])][int(centers[v][0])]
-        hist, hogFeatures = getHistogramFeatures(bgrImage, int(centers[v][1]), int(centers[v][0]), forUnaryFeature=True)
+        hist, hogFeatures = getHistogramFeatures(rgb_img, int(centers[v][1]), int(centers[v][0]), forUnaryFeature=True)
         node_feature = np.concatenate([avg_rgb2, hist, hogFeatures])
         n_features.append(node_feature)
 
-        minEuclideanDistance = np.inf # simulate infinity
+        minEuclideanDistance = np.inf
         pixelClass = -1
         for i in range(0, len(pixelClasses)) :
             # set the label of the superpixel to the pixelClass with minimum euclidean distance
@@ -326,23 +321,23 @@ def segment_image(orig_file, mask_file, pixelClasses = pixel_class_arr, crfmodel
                 minEuclideanDistance = dist
         n_labels.append(pixelClass)
     
-    histogramCache = {}
+    hist_dict = {}
     for e in edges :
-        # pairwise feature - euclidean distance of adjacent superpixels
+        # pairwise feature - euclidean distance of pairwise superpixels
         dist = np.linalg.norm(avg_rgb[int(centers[e[0]][1])][int(centers[e[0]][0])] - avg_rgb[int(centers[e[1]][1])][int(centers[e[1]][0])] )
 
-        if e[0] not in histogramCache :
-            hist1, lbphist1 = getHistogramFeatures(bgrImage, int(centers[e[0]][1]), int(centers[e[0]][0]))
-            histogramCache[e[0]] = {'hist' : hist1, 'lbphist' : lbphist1}
+        if e[0] not in hist_dict :
+            hist1, lbphist1 = getHistogramFeatures(rgb_img, int(centers[e[0]][1]), int(centers[e[0]][0]))
+            hist_dict[e[0]] = {'hist' : hist1, 'lbphist' : lbphist1}
         else :
-            hist1 =  histogramCache[e[0]]['hist']
-            lbphist1 =  histogramCache[e[0]]['lbphist']
-        if e[1] not in histogramCache :
-            hist2, lbphist2 = getHistogramFeatures(bgrImage, int(centers[e[1]][1]), int(centers[e[1]][0]))
-            histogramCache[e[1]] = {'hist' : hist2, 'lbphist' : lbphist2}
+            hist1 =  hist_dict[e[0]]['hist']
+            lbphist1 =  hist_dict[e[0]]['lbphist']
+        if e[1] not in hist_dict :
+            hist2, lbphist2 = getHistogramFeatures(rgb_img, int(centers[e[1]][1]), int(centers[e[1]][0]))
+            hist_dict[e[1]] = {'hist' : hist2, 'lbphist' : lbphist2}
         else :
-            hist2 =  histogramCache[e[1]]['hist']
-            lbphist2 =  histogramCache[e[1]]['lbphist']
+            hist2 =  hist_dict[e[1]]['hist']
+            lbphist2 =  hist_dict[e[1]]['lbphist']
             
       
         histogramDist = cv2.compareHist(hist1, hist2, 3)
@@ -352,40 +347,38 @@ def segment_image(orig_file, mask_file, pixelClasses = pixel_class_arr, crfmodel
         edge_features.append(pairwise_feature)
     
     
-    xInstance.append((np.array(n_features), np.array(edges), np.array(edge_features))) 
-    yInstance.append(np.array(n_labels))
-    
-    # Create superpixeled image
-    if mask_file is not None :
-        labeledSuperPixeledRGB = np.zeros(labelImageRGB.shape)
-        labeledSuperPixeled = np.zeros(labelImage.shape)
-        #print labeledSuperPixeled.shape
-        #print labelImageRGB.shape
-        for i in range(0,labeledSuperPixeledRGB.shape[0]) :
-            for j in range(0,labeledSuperPixeledRGB.shape[1]) :    
-                labeledSuperPixeledRGB[i][j] = pixelClasses[n_labels[segments[i][j]]]
-                labeledSuperPixeled[i][j] = n_labels[segments[i][j]]
+    train_x.append((np.array(n_features), np.array(edges), np.array(edge_features)))
+    train_y.append(np.array(n_labels))
+
+    orig_masked_sp = np.zeros(labelImageRGB.shape)
+    masked_pred_sp = np.zeros(labelImage.shape)
+    #print orig_masked_sp.shape
+    #print masked_pred_sp.shape
+    for i in range(0,orig_masked_sp.shape[0]) :
+        for j in range(0,orig_masked_sp.shape[1]) :
+            orig_masked_sp[i][j] = pixelClasses[n_labels[segments[i][j]]]
+            masked_pred_sp[i][j] = n_labels[segments[i][j]]
             
     
-    # Predict with CRF and build image label
-    y_pred = crfmodel.predict(np.array(xInstance))
-    labeledPredictionRGB = np.zeros(image.shape)
-    labeledPrediction = np.zeros((image.shape[0], image.shape[1]))
-    #print labeledPrediction.shape
-    for i in range(0,labeledPredictionRGB.shape[0]) :
-        for j in range(0,labeledPredictionRGB.shape[1]) :
-            labeledPredictionRGB[i][j] = pixelClasses[y_pred[0][segments[i][j]]]
-            labeledPrediction[i][j] = y_pred[0][segments[i][j]]
+    # Predict with CRF and build image mask
+    y_pred = crfmodel.predict(np.array(train_x))
+    orig_masked = np.zeros(image.shape)
+    masked_pred = np.zeros((image.shape[0], image.shape[1]))
 
-    pw_recall = recall_score(labelImage.flatten().flatten(), labeledPrediction.flatten().flatten())
-    pw_f1 = f1_score(labelImage.flatten().flatten(), labeledPrediction.flatten().flatten())
-    pw_so = getCellAccuracy(labelImage.flatten().flatten(), labeledPrediction.flatten().flatten())
-    pw_accuracy = accuracy_score(labelImage.flatten().flatten(),  labeledPrediction.flatten().flatten())
-    pw_precision = precision_score(labelImage.flatten().flatten(), labeledPrediction.flatten().flatten())
+    for i in range(0,orig_masked.shape[0]) :
+        for j in range(0,orig_masked.shape[1]) :
+            orig_masked[i][j] = pixelClasses[y_pred[0][segments[i][j]]]
+            masked_pred[i][j] = y_pred[0][segments[i][j]]
+
+    pw_recall = recall_score(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
+    pw_f1 = f1_score(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
+    pw_so = getCellAccuracy(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
+    pw_accuracy = accuracy_score(labelImage.flatten().flatten(),  masked_pred.flatten().flatten())
+    pw_precision = precision_score(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
 
     print '\nSegmentation completed in ' + str(time.time() - start_time) + ' seconds.'
     print 'Total Pixels: ' + str(labelImage.flatten().flatten().shape[0])
-    print 'SLIC Pixelwise Accuracy: ' + str(accuracy_score(labelImage.flatten().flatten(), labeledSuperPixeled.flatten().flatten()))
+    print 'SLIC Pixelwise Accuracy: ' + str(accuracy_score(labelImage.flatten().flatten(), masked_pred_sp.flatten().flatten()))
     print ''
     print 'Pixelwise Accuracy: ' + str(pw_accuracy)
     print 'Pixelwise Precision: ' + str(pw_precision)
@@ -405,14 +398,14 @@ def segment_image(orig_file, mask_file, pixelClasses = pixel_class_arr, crfmodel
     if mask_file is not None :
         ax[0, 2].imshow(label_segments)
         ax[1, 0].imshow(labelImageRGB)
-        ax[1, 1].imshow(labeledSuperPixeledRGB)
+        ax[1, 1].imshow(orig_masked_sp)
 
 
     ax[0, 2].set_title("Segmented Ground Truth")
     ax[1, 0].set_title("Ground truth")
     ax[1, 1].set_title("Labeled Super Pixels")
 
-    ax[1, 2].imshow(labeledPredictionRGB)
+    ax[1, 2].imshow(orig_masked)
     ax[1, 2].set_title("Prediction")
 
     for a in ax.ravel():
@@ -428,16 +421,16 @@ def segment_image(orig_file, mask_file, pixelClasses = pixel_class_arr, crfmodel
 
 def trainCRF():
     print 'Generating training set'
-    trainSetX, trainSetY = preproc_data(basedir='dataset/cells/training/images/',
+    train_X, train_Y = preproc_data(basedir='dataset/cells/training/images/',
                                         labeldir='dataset/cells/training/masks/')
     print 'Generating test set'
-    testSetX, testSetY = preproc_data(basedir='dataset/cells/test/images/', labeldir='dataset/cells/test/masks/')
+    test_X, test_Y = preproc_data(basedir='dataset/cells/test/images/', labeldir='dataset/cells/test/masks/')
     print 'Training the CRF'
-    _train_crf(trainSetX, trainSetY, testSetX, testSetY)
+    _train_crf(train_X, train_Y, test_X, test_Y)
 
 if __name__ == "__main__":
 
-    rgbFile = "dataset/cells/test/images/image-12.jpg"
-    labelFile = rgbFile.replace('image', 'mask').replace('jpg', 'png')
+    orig_file = "dataset/cells/test/images/image-12.jpg"
+    mask_file = orig_file.replace('image', 'mask').replace('jpg', 'png')
 
-    segment_image(orig_file=rgbFile, mask_file=labelFile)
+    segment_image(orig_file=orig_file, mask_file=mask_file)
