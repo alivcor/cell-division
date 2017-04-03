@@ -1,6 +1,6 @@
 import time
 from imp_crf_core import preproc_data
-from imp_crf_core import make_graph
+from imp_crf_core import create_graph
 from imp_crf_core import getHistogramFeatures
 from imp_crf_core import train_crf, evaluatePerformance, kullback_leibler_divergence, chi2_distance
 from os import path
@@ -26,7 +26,8 @@ try:
 except ImportError:
     import pickle
 
-
+# superpixel color intensity, histogram, and the HoG.
+# color intensity difference, histogram difference, and texture similarity for edge features.
 
 pixel_class_arr = [np.array([0., 0., 0.]), np.array([1., 1., 1.])]
 
@@ -56,7 +57,7 @@ def foregroundQualityScore(a , b) :
     return (TP / (TP+FP+FN))
 
 
-def showSegmentation(rgbfile, labelfile, pixelClasses = pixel_class_arr, crfmodel = cellsCRF, visualizeSegmentation=True) :
+def segment_image(rgbfile, labelfile, pixelClasses = pixel_class_arr, crfmodel = cellsCRF, visualizeSegmentation=True) :
     start_time = time.time()
     
     # Read RGB and label image
@@ -92,7 +93,7 @@ def showSegmentation(rgbfile, labelfile, pixelClasses = pixel_class_arr, crfmode
   
 
     # Create graph of superpixels and compute their centers
-    vertices, edges = make_graph(segments)
+    vertices, edges = create_graph(segments)
     gridx, gridy = np.mgrid[:segments.shape[0], :segments.shape[1]]
     centers = dict()
     for v in vertices:
@@ -226,11 +227,6 @@ def showSegmentation(rgbfile, labelfile, pixelClasses = pixel_class_arr, crfmode
             a.set_xticks(())
             a.set_yticks(())
         plt.show()
-        
-    # Save result
-    #skimageIO.imsave('slic-' + ntpath.basename(rgbfile) , rgb_segments)
-    #skimageIO.imsave('slicground-' + ntpath.basename(rgbfile) , label_segments)
-    #skimageIO.imsave('result-' + ntpath.basename(rgbfile) , labeledPredictionRGB)
     
     # Return metrics
     if labelfile is not None :
@@ -244,4 +240,4 @@ if __name__ == "__main__":
     rgbFile = "dataset/cells/test/images/image-12.jpg"
     labelFile = rgbFile.replace('image', 'mask').replace('jpg', 'png')
 
-    showSegmentation(rgbfile=rgbFile, labelfile=labelFile)
+    segment_image(rgbfile=rgbFile, labelfile=labelFile)

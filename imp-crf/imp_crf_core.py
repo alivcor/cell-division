@@ -31,7 +31,7 @@ cnnPredictFunction = None
 segments = None
 
 
-def make_graph(grid):
+def create_graph(grid):
     # get unique labels
     vertices = numpy.unique(grid)
  
@@ -148,7 +148,7 @@ def preproc_data(basedir = 'dataset/cells/training/images/', labeldir ='dataset/
             avg_rgb = color.label2rgb(segments, image, kind='avg') 
             avg_label = color.label2rgb(segments, labelImageRGB, kind='avg')
             # Create graph of superpixels and compute their centers
-            vertices, edges = make_graph(segments)
+            vertices, edges = create_graph(segments)
             gridx, gridy = numpy.mgrid[:segments.shape[0], :segments.shape[1]]
             centers = dict()
             for v in vertices:
