@@ -6,6 +6,7 @@ from skimage.segmentation import slic
 import cv2
 from os import walk
 import numpy as np
+from scipy.io import loadmat
 from skimage.data import astronaut
 from skimage.viewer import ImageViewer
 from skimage.segmentation import mark_boundaries
@@ -231,7 +232,7 @@ def evaluatePerformance(clf, datasetX, datasetY):
 
 
 def _train_crf(trainSetX, trainSetY, testSetX, testSetY):
-    modelLogger = SaveLogger('cells-hog.model', save_every=1)
+    modelLogger = SaveLogger('cells-hog_test.model', save_every=1)
 
     print 'Training CRF...'
     start_time = time.time()
@@ -428,9 +429,11 @@ def trainCRF():
     print 'Training the CRF'
     _train_crf(train_X, train_Y, test_X, test_Y)
 
+
 if __name__ == "__main__":
 
-    orig_file = "dataset/cells/test/images/image-12.jpg"
-    mask_file = orig_file.replace('image', 'mask').replace('jpg', 'png')
-
-    segment_image(orig_file=orig_file, mask_file=mask_file)
+    # orig_file = "dataset/cells/test/images/image-12.jpg"
+    # mask_file = orig_file.replace('image', 'mask').replace('jpg', 'png')
+    #
+    # segment_image(orig_file=orig_file, mask_file=mask_file)
+    trainCRF()
