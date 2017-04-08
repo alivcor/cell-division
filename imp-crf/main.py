@@ -379,8 +379,7 @@ def segment_image(orig_file, mask_file, pixelClasses = pixel_class_arr, crfmodel
 
     print '\nSegmentation completed in ' + str(time.time() - start_time) + ' seconds.'
     print 'Total Pixels: ' + str(labelImage.flatten().flatten().shape[0])
-    print 'SLIC Pixelwise Accuracy: ' + str(accuracy_score(labelImage.flatten().flatten(), masked_pred_sp.flatten().flatten()))
-    print ''
+
     print 'Pixelwise Accuracy: ' + str(pw_accuracy)
     print 'Pixelwise Precision: ' + str(pw_precision)
     print 'Pixelwise Recall: ' + str(pw_recall)

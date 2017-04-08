@@ -36,7 +36,7 @@ except ImportError:
 pixel_class_arr = [np.array([0., 0., 0.]), np.array([1., 1., 1.])]
 
 # Load trained Model
-trained_model = SaveLogger('save/cells-hog.model', save_every=1)
+trained_model = SaveLogger('save/cells-hog_viper.model', save_every=1)
 cellsCRF = trained_model.load()
 segments = None
 patchSize = 96
@@ -430,8 +430,8 @@ def trainCRF():
 
 
 if __name__ == "__main__":
-    # orig_file = "dataset/cells/test/images/image-12.jpg"
-    # mask_file = orig_file.replace('image', 'mask').replace('jpg', 'png')
-    #
-    # segment_image(orig_file=orig_file, mask_file=mask_file)
-    trainCRF()
+    orig_file = "test_viper/test/x/119.png"
+    mask_file = "test_viper/test/y/119.png"
+
+    segment_image(orig_file=orig_file, mask_file=mask_file)
+    # trainCRF()
