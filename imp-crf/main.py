@@ -253,7 +253,7 @@ def _train_crf(trainSetX, trainSetY, testSetX, testSetY):
     print '-----------------------------------------------------------------------'
 
 
-def getCellAccuracy(a, b) :
+def get_miu(a, b) :
     TP = TN = FP = FN = 0.0
     for i in xrange(0, len(a)):
         if a[i] == b[i] :
@@ -373,7 +373,7 @@ def segment_image(orig_file, mask_file, pixelClasses = pixel_class_arr, crfmodel
 
     pw_recall = recall_score(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
     pw_f1 = f1_score(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
-    pw_so = getCellAccuracy(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
+    miu = get_miu(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
     pw_accuracy = accuracy_score(labelImage.flatten().flatten(),  masked_pred.flatten().flatten())
     pw_precision = precision_score(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
 
@@ -384,7 +384,7 @@ def segment_image(orig_file, mask_file, pixelClasses = pixel_class_arr, crfmodel
     print 'Pixelwise Precision: ' + str(pw_precision)
     print 'Pixelwise Recall: ' + str(pw_recall)
     print 'Pixelwise F1: ' + str(pw_f1)
-    print 'Pixelwise S0: ' + str(pw_so)
+    print 'Pixelwise S0: ' + str(miu)
 
 
     fig, ax = plt.subplots(2, 3)
@@ -415,7 +415,7 @@ def segment_image(orig_file, mask_file, pixelClasses = pixel_class_arr, crfmodel
     
     # Return metrics
     if mask_file is not None :
-        return pw_accuracy, pw_precision, pw_recall, pw_f1, pw_so
+        return pw_accuracy, pw_precision, pw_recall, pw_f1, miu
     else :
         return
 
