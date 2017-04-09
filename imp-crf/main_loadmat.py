@@ -36,7 +36,7 @@ except ImportError:
 pixel_class_arr = [np.array([0., 0., 0.]), np.array([1., 1., 1.])]
 
 # Load trained Model
-trained_model = SaveLogger('save/cells-hog_viper.model', save_every=1)
+trained_model = SaveLogger('save/cells-hog_viper_unknown.model', save_every=1)
 cellsCRF = trained_model.load()
 segments = None
 patchSize = 96
@@ -254,7 +254,7 @@ def _train_crf(trainSetX, trainSetY, testSetX, testSetY):
     print '-----------------------------------------------------------------------'
 
 
-def getCellAccuracy(a, b):
+def getMIU(a, b):
     TP = TN = FP = FN = 0.0
     for i in xrange(0, len(a)):
         if a[i] == b[i]:
@@ -372,49 +372,49 @@ def segment_image(orig_file, mask_file, pixelClasses=pixel_class_arr, crfmodel=c
 
     pw_recall = recall_score(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
     pw_f1 = f1_score(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
-    pw_so = getCellAccuracy(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
+    miu = getMIU(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
     pw_accuracy = accuracy_score(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
     pw_precision = precision_score(labelImage.flatten().flatten(), masked_pred.flatten().flatten())
 
-    print '\nSegmentation completed in ' + str(time.time() - start_time) + ' seconds.'
-    print 'Total Pixels: ' + str(labelImage.flatten().flatten().shape[0])
-    print 'SLIC Pixelwise Accuracy: ' + str(
-        accuracy_score(labelImage.flatten().flatten(), masked_pred_sp.flatten().flatten()))
-    print ''
-    print 'Pixelwise Accuracy: ' + str(pw_accuracy)
-    print 'Pixelwise Precision: ' + str(pw_precision)
-    print 'Pixelwise Recall: ' + str(pw_recall)
-    print 'Pixelwise F1: ' + str(pw_f1)
-    print 'Pixelwise S0: ' + str(pw_so)
+    # print '\nSegmentation completed in ' + str(time.time() - start_time) + ' seconds.'
+    # print 'Total Pixels: ' + str(labelImage.flatten().flatten().shape[0])
+    # print 'SLIC Pixelwise Accuracy: ' + str(
+    #     accuracy_score(labelImage.flatten().flatten(), masked_pred_sp.flatten().flatten()))
+    # print ''
+    # print 'Pixelwise Accuracy: ' + str(pw_accuracy)
+    # print 'Pixelwise Precision: ' + str(pw_precision)
+    # print 'Pixelwise Recall: ' + str(pw_recall)
+    # print 'Pixelwise F1: ' + str(pw_f1)
+    # print 'Pixelwise S0: ' + str(miu)
 
-    fig, ax = plt.subplots(2, 3)
-    fig.canvas.set_window_title('Image Segmentation')
-    ax[0, 0].imshow(image)
-    ax[0, 0].set_title("Original Image")
-
-    ax[0, 1].imshow(rgb_segments)
-    ax[0, 1].set_title("Super Pixels")
-
-    if mask_file is not None:
-        ax[0, 2].imshow(label_segments)
-        ax[1, 0].imshow(labelImageRGB)
-        ax[1, 1].imshow(orig_masked_sp)
-
-    ax[0, 2].set_title("Segmented Ground Truth")
-    ax[1, 0].set_title("Ground truth")
-    ax[1, 1].set_title("Labeled Super Pixels")
-
-    ax[1, 2].imshow(orig_masked)
-    ax[1, 2].set_title("Prediction")
-
-    for a in ax.ravel():
-        a.set_xticks(())
-        a.set_yticks(())
-    plt.show()
+    # fig, ax = plt.subplots(2, 3)
+    # fig.canvas.set_window_title('Image Segmentation')
+    # ax[0, 0].imshow(image)
+    # ax[0, 0].set_title("Original Image")
+    #
+    # ax[0, 1].imshow(rgb_segments)
+    # ax[0, 1].set_title("Super Pixels")
+    #
+    # if mask_file is not None:
+    #     ax[0, 2].imshow(label_segments)
+    #     ax[1, 0].imshow(labelImageRGB)
+    #     ax[1, 1].imshow(orig_masked_sp)
+    #
+    # ax[0, 2].set_title("Segmented Ground Truth")
+    # ax[1, 0].set_title("Ground truth")
+    # ax[1, 1].set_title("Labeled Super Pixels")
+    #
+    # ax[1, 2].imshow(orig_masked)
+    # ax[1, 2].set_title("Prediction")
+    #
+    # for a in ax.ravel():
+    #     a.set_xticks(())
+    #     a.set_yticks(())
+    # plt.show()
 
     # Return metrics
     if mask_file is not None:
-        return pw_accuracy, pw_precision, pw_recall, pw_f1, pw_so
+        return pw_accuracy, pw_precision, pw_recall, pw_f1, miu
     else:
         return
 
@@ -430,8 +430,34 @@ def trainCRF():
 
 
 if __name__ == "__main__":
-    orig_file = "test_viper/test/x/119.png"
-    mask_file = "test_viper/test/y/119.png"
 
-    segment_image(orig_file=orig_file, mask_file=mask_file)
+    # orig_file = "test_viper/test/x/119.png"
+    # mask_file = "test_viper/test/y/119.png"
+    basedir = "dataset/test/x/"
+    avg_pw_a = 0
+    avg_pw_prec = 0
+    avg_pw_recall = 0
+    avg_pw_f1 = 0
+    avg_pw_miu = 0
+    for (dirpath, dirnames, filenames) in walk(basedir):
+        n = 0
+        for imageFilename in filenames:
+            n+=1
+            orig_file = basedir + imageFilename
+            mask_file = orig_file.replace("x", "y")
+            pw_a, pw_prec, pw_recall, pw_f1, miu = segment_image(orig_file=orig_file, mask_file=mask_file)
+            print imageFilename, ": ", pw_a, pw_prec, pw_recall, pw_f1, miu
+            avg_pw_a += pw_a
+            avg_pw_prec += pw_prec
+            avg_pw_recall += pw_recall
+            avg_pw_f1 += pw_f1
+            avg_pw_miu += miu
+
+    print "Average Pixelwise Accuracy : ", avg_pw_a/n
+    print "Average Precision : ", avg_pw_prec/n
+    print "Average Pixelwise Recall : ", avg_pw_recall/n
+    print "Average Pixelwise F1 : ", avg_pw_f1/n
+    print "Average Pixelwise MIU : ", avg_pw_miu/n
+
     # trainCRF()
+
