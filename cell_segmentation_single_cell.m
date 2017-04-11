@@ -17,7 +17,7 @@ close all;
 
 %I = squeeze(trX(1,:,:));
 
-I = squeeze(cDIC(:,:,1,10)); % was 5,20
+I = imread('imp-crf/dataset/test/x/1.png'); % was 5,20
 
 I = I/max(max(I));
 
@@ -49,7 +49,7 @@ I = imgaussfilt(I,2);
 BWs = edge(I, 'Canny',0.32); % Canny, 0.32 was the best.
 %fudgeFactor = 1.2; % was .5
 %BWs = edge(I,'sobel', threshold * fudgeFactor);
-figure, imshow(BWs), title('binary gradient mask');
+% figure, imshow(BWs), title('binary gradient mask');
 
 %% Step 3: Dilate the Image
 % The binary gradient mask shows lines of high contrast in the image. These
@@ -68,7 +68,7 @@ se0 = strel('disk', 2, 0); % was line,3,0
 % function dilates the image.
 
 BWsdil = imdilate(BWs, [se90 se0]);
-figure, imshow(BWsdil), title('dilated gradient mask');
+% figure, imshow(BWsdil), title('dilated gradient mask');
 
 %% Step 4: Fill Interior Gaps 
 % The dilated gradient mask shows the outline of the cell quite nicely, but
@@ -101,8 +101,9 @@ BWfinal = imerode(BWfinal,seD);
 BWfinal = bwareaopen(BWfinal,80);
 
 
+% comment out to see result of segmentation
+% figure, imshow(BWfinal), title('segmented image');
 
-figure, imshow(BWfinal), title('segmented image');
 
 
 %% splitting the cells
@@ -124,11 +125,11 @@ figure, imshow(BWfinal), title('segmented image');
 % An alternate method for displaying the segmented object would be to place
 % an outline around the segmented cell. The outline is created by the
 % |bwperim| function.
-
-BWoutline = bwperim(BWfinal);
-Segout = I; 
-Segout(BWoutline) = 255; 
-figure, imshow(Segout), title('outlined original image');
+% 
+% BWoutline = bwperim(BWfinal);
+% Segout = I; 
+% Segout(BWoutline) = 255; 
+% figure, imshow(Segout), title('outlined original image');
 
 
 
