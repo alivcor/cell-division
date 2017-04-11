@@ -1,3 +1,7 @@
 
 *.caffemodel
 /cs284-image-segmentation/
+/labelledim.zip
+/erosion_results.mat
+/erosion_results.zip
+/variables.mat
