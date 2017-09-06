@@ -77,7 +77,7 @@ patch_begin = 1
 patch_end = 448
 success_count = 0
 
-while(success_count < num_patches):
+while(success_count < num_patches-1):
     locs = np.random.randint(patch_begin, high=patch_end, size=(2, 2))
     cropped_mask = mask_image[locs[1,0]:locs[1,0]+64, locs[0,0]:locs[0,0]+64]
     # print "locs[1,0]:64, locs[0,0]:64 : " + str(locs[1,0]) + ":64, " + str(locs[0,0]) + ":64"
@@ -87,6 +87,8 @@ while(success_count < num_patches):
     cell_ratio = np.sum(np.sum(cropped_mask)) / (64 * 64)
     # print "cell_ratio : " + str(cell_ratio)
     if(cell_ratio > cell_ratio_threshold):
+        print "\n\n----------------------------------------------------------------------------------------------"
+        print "SC: " + str(success_count+1)
         print "Voila ! cell_ratio = " + str(cell_ratio)
         success_count = success_count + 1
         print "Updated success count, cropping now..."
