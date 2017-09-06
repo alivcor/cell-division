@@ -125,4 +125,6 @@ def selective_crop(frame_of_interest=0, mask_image, num_patches=150, cell_ratio_
             dataset[success_count * 8: (success_count + 1) * 8, :, :, 2] = augmented_c561
             print "dataset.shape : " + str(dataset.shape)
 
+    return dataset
+
 
