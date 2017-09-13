@@ -28,7 +28,11 @@ def countObjects(file_ids, dataset_annotations_path):
     print "Number of images with only class of interest : " + str(len(filtered_ids))
     return filtered_ids
 
+def preprocessData(dataset_class_path, dataset_annotations_path, class_type, data_type):
+    dataset_class_path = dataset_class_path + class_type + "_" + data_type + ".txt"
+    return countObjects(generateFileIDs(dataset_class_path), dataset_annotations_path)
 
-dataset_class_path = "VOC2007/ImageSets/Main/cat_val.txt"
+dataset_class_path = "VOC2007/ImageSets/Main/"
 dataset_annotations_path = "VOC2007/Annotations/"
-print countObjects(generateFileIDs(dataset_class_path), dataset_annotations_path)
+
+print preprocessData(dataset_class_path, dataset_annotations_path, "cat", "train")
