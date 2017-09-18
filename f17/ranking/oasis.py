@@ -148,7 +148,7 @@ class Oasis(BaseEstimator):
 
         return W, loss_steps_batch
 
-    def fit(self, X, y, overwrite_X=False, overwrite_y=False, verbose=False):
+    def fit(self, X, y, overwrite_X=True, overwrite_y=True, verbose=False):
         """ Fit an OASIS model. """
 
         if not overwrite_X:

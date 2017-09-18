@@ -150,7 +150,7 @@ class Oasis(BaseEstimator):
 
         return W, loss_steps_batch
 
-    def fit(self, X, y, overwrite_X=False, overwrite_y=False, verbose=False):
+    def fit(self, X, y, overwrite_X=True, overwrite_y=True, verbose=True):
         """ Fit an OASIS model. """
 
         if not overwrite_X:
@@ -162,6 +162,7 @@ class Oasis(BaseEstimator):
 
         self.init = np.random.RandomState(self.random_seed)
 
+        print(n_features)
         # Parameter initialization
         self._weights = np.eye(n_features).flatten()
         # self._weights = np.random.randn(n_features,n_features).flatten()
@@ -280,7 +281,16 @@ class Oasis(BaseEstimator):
             errsum[kk] = sum(errors)
 
         errrate = errsum / numqueries
-        return errrate
+        return errrate, labels
+
+
+def resizeImage(image_matrix):
+    r = 50.0 / image_matrix.shape[1]
+    dim = (50, int(image_matrix.shape[0] * r))
+
+    # perform the actual resizing of the image and show it
+    resized_image = cv2.resize(image_matrix, dim, interpolation=cv2.INTER_AREA)
+    return resized_image
 
 
 if __name__ == "__main__":
@@ -295,7 +305,7 @@ if __name__ == "__main__":
     DATASET_CLASS_PATH = "VOC2007/ImageSets/Main/"
     DATASET_ANNOTATIONS_PATH = "VOC2007/Annotations/"
     IMAGE_PATH = "VOC2007/JPEGImages/"
-    NUM_PIXELS = 500 * 300
+    NUM_PIXELS = 50 * 50
     dog_train_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "dog", "train")
     dog_val_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "dog", "val")
     cat_train_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "cat", "train")
@@ -307,15 +317,15 @@ if __name__ == "__main__":
     X_test = np.zeros((4, NUM_PIXELS))
     y_test = np.array([0, 1, 0, 1])
 
-    dog1 = cv2.imread(IMAGE_PATH + dog_train_ids[0] + ".jpg")
-    dog2 = cv2.imread(IMAGE_PATH + dog_train_ids[1] + ".jpg")
-    dog3 = cv2.imread(IMAGE_PATH + dog_val_ids[0] + ".jpg")
-    dog4 = cv2.imread(IMAGE_PATH + dog_val_ids[1] + ".jpg")
+    dog1 = resizeImage(cv2.imread(IMAGE_PATH + dog_train_ids[0] + ".jpg"))
+    dog2 = resizeImage(cv2.imread(IMAGE_PATH + dog_train_ids[1] + ".jpg"))
+    dog3 = resizeImage(cv2.imread(IMAGE_PATH + dog_val_ids[0] + ".jpg"))
+    dog4 = resizeImage(cv2.imread(IMAGE_PATH + dog_val_ids[1] + ".jpg"))
 
-    cat1 = cv2.imread(IMAGE_PATH + cat_train_ids[0] + ".jpg")
-    cat2 = cv2.imread(IMAGE_PATH + cat_train_ids[1] + ".jpg")
-    cat3 = cv2.imread(IMAGE_PATH + cat_val_ids[0] + ".jpg")
-    cat4 = cv2.imread(IMAGE_PATH + cat_val_ids[1] + ".jpg")
+    cat1 = resizeImage(cv2.imread(IMAGE_PATH + cat_train_ids[0] + ".jpg"))
+    cat2 = resizeImage(cv2.imread(IMAGE_PATH + cat_train_ids[1] + ".jpg"))
+    cat3 = resizeImage(cv2.imread(IMAGE_PATH + cat_val_ids[0] + ".jpg"))
+    cat4 = resizeImage(cv2.imread(IMAGE_PATH + cat_val_ids[1] + ".jpg"))
 
     # print dog2.flatten().shape
     X_train[0, :] = dog1.flatten()[0:NUM_PIXELS]
@@ -334,13 +344,22 @@ if __name__ == "__main__":
     # exit(0)
 
     print "Reached 1"
-    model = Oasis(n_iter=1000, do_psd=True, psd_every=3,
-                  save_path="oasis/oasis_test").fit(X_train, y_train,
-                                                            verbose=True)
+    # model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis/oasis_test").fit(X_train, y_train, verbose=True)
+    # model = Oasis()
 
-    errrate = model.predict(X_test, X_train, y_test, y_train, maxk=1000)
-    print "Min error rate: %6.4f at k=%d" \
-          % (min(errrate), np.argmin(errrate) + 1)
+    model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis/oasis_test2")
+
+    # model_pkl = gzip.open('oasis/oasis_test/model0010.pklz', 'rb')
+    # # with open('oasis/oasis_test/model0010.pklz', 'rb') as fid:
+    # model = pickle.load(model_pkl)
+
+    model.read_snapshot("oasis/oasis_test/model0010.pklz")
+
+    errrate, labels = model.predict(X_test, X_train, y_test, y_train, maxk=1000)
+
+    print labels
+    print "Min error rate: %6.4f at k=%d" % (min(errrate), np.argmin(errrate) + 1)
+
     plt.figure()
     plt.plot(errrate)
 
@@ -348,4 +367,4 @@ if __name__ == "__main__":
     W = model._weights.view()
     W.shape = (n_features, n_features)
 
-    print W[0:5, 0:5]
+    # print W[0:5, 0:5]
