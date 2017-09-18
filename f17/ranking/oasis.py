@@ -15,10 +15,8 @@ import matplotlib.pyplot as plt
 import cPickle as pickle
 import os
 import gzip
-import cv2
 from sys import stdout
-import voc_preprocessor
-from voc_preprocessor import countObjects, generateFileIDs
+
 
 def snorm(x):
     """Dot product based squared Euclidean norm implementation
@@ -284,58 +282,16 @@ class Oasis(BaseEstimator):
 
 
 if __name__ == "__main__":
-    # from sklearn import datasets
-    # digits = datasets.load_digits()
-    #
-    # X_train = digits.data[500:] / 16
-    # X_test = digits.data[:500] / 16
-    # y_train = digits.target[500:]
-    # y_test = digits.target[:500]
+    from sklearn import datasets
+    digits = datasets.load_digits()
 
-    DATASET_CLASS_PATH = "VOC2007/ImageSets/Main/"
-    DATASET_ANNOTATIONS_PATH = "VOC2007/Annotations/"
-    IMAGE_PATH = "VOC2007/JPEGImages/"
-    NUM_PIXELS = 500 * 300
-    dog_train_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "dog", "train")
-    dog_val_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "dog", "val")
-    cat_train_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "cat", "train")
-    cat_val_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "cat", "val")
-    # X_train = np.zeros((len(filtered_ids), ))
+    X_train = digits.data[500:] / 16
+    X_test = digits.data[:500] / 16
+    y_train = digits.target[500:]
+    y_test = digits.target[:500]
 
-    X_train = np.zeros((4, NUM_PIXELS))
-    y_train = np.array([1, 0, 1, 0])
-    X_test = np.zeros((4, NUM_PIXELS))
-    y_test = np.array([0, 1, 0, 1])
-
-    dog1 = cv2.imread(IMAGE_PATH + dog_train_ids[0] + ".jpg")
-    dog2 = cv2.imread(IMAGE_PATH + dog_train_ids[1] + ".jpg")
-    dog3 = cv2.imread(IMAGE_PATH + dog_val_ids[0] + ".jpg")
-    dog4 = cv2.imread(IMAGE_PATH + dog_val_ids[1] + ".jpg")
-
-    cat1 = cv2.imread(IMAGE_PATH + cat_train_ids[0] + ".jpg")
-    cat2 = cv2.imread(IMAGE_PATH + cat_train_ids[1] + ".jpg")
-    cat3 = cv2.imread(IMAGE_PATH + cat_val_ids[0] + ".jpg")
-    cat4 = cv2.imread(IMAGE_PATH + cat_val_ids[1] + ".jpg")
-
-    # print dog2.flatten().shape
-    X_train[0, :] = dog1.flatten()[0:NUM_PIXELS]
-    X_train[1, :] = cat1.flatten()[0:NUM_PIXELS]
-    X_train[2, :] = dog2.flatten()[0:NUM_PIXELS]
-    X_train[3, :] = cat2.flatten()[0:NUM_PIXELS]
-
-    X_test[0, :] = dog3.flatten()[0:NUM_PIXELS]
-    X_test[1, :] = cat3.flatten()[0:NUM_PIXELS]
-    X_test[2, :] = dog4.flatten()[0:NUM_PIXELS]
-    X_test[3, :] = cat4.flatten()[0:NUM_PIXELS]
-
-
-    print("\n\nX_train.shape : " + str(X_train.shape) + "\n" + "X_test.shape : " + str(X_test.shape) + "\n" + "y_train.shape : " + str(y_train.shape) + "\n" + "y_test.shape : " + str(y_test.shape))
-    # print(X_train[0].shape)
-    # exit(0)
-
-    print "Reached 1"
-    model = Oasis(n_iter=1000, do_psd=True, psd_every=3,
-                  save_path="oasis/oasis_test").fit(X_train, y_train,
+    model = Oasis(n_iter=100000, do_psd=True, psd_every=3,
+                  save_path="/tmp/gwtaylor/oasis_test").fit(X_train, y_train,
                                                             verbose=True)
 
     errrate = model.predict(X_test, X_train, y_test, y_train, maxk=1000)
