@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 class ImageHelpers:
 	def __init__(self):
-		self.sift_object = cv2.SIFT()#cv2.FeatureDetector_create("SIFT") #cv2.xfeatures2d.SIFT_create()
+		self.sift_object = cv2.xfeatures2d.SIFT_create()#cv2.FeatureDetector_create("SIFT") #cv2.xfeatures2d.SIFT_create()
 
 	def gray(self, image):
 		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
