@@ -137,31 +137,39 @@ class BOV:
         predictions = []
 
         for word, imlist in self.testImages.iteritems():
-            print "processing " ,word
+            # print "processing " ,word
             for im in imlist:
+                print "Actual : " + str(word),
                 cl = self.recognize(im)
-                predictions.append({
-                    'image':im,
-                    'class':cl,
-                    'object_name':self.name_dict[str(int(cl[0]))]
-                    })
+                print " | Predicted " + str(cl[0])
+                # predictions.append({
+                #     # 'image':im,
+                #     'class':cl,
+                #     'object_name':self.name_dict[str(int(cl[0]))]
+                #     })
 
-        print predictions
-        for each in predictions:
-            # cv2.imshow(each['object_name'], each['image'])
-            # cv2.waitKey()
-            # cv2.destroyWindow(each['object_name'])
-            # 
-            plt.imshow(cv2.cvtColor(each['image'], cv2.COLOR_GRAY2RGB))
-            plt.title(each['object_name'])
-            plt.show()
+        # print "\n\n Predictions : " + str(predictions)
+
+        # for each in predictions:
+        #     # cv2.imshow(each['object_name'], each['image'])
+        #     # cv2.waitKey()
+        #     # cv2.destroyWindow(each['object_name'])
+        #     #
+        #     plt.imshow(cv2.cvtColor(each['image'], cv2.COLOR_GRAY2RGB))
+        #     plt.title(each['object_name'])
+        #     plt.show()
 
 
     def print_vars(self):
         pass
 
+def warn(*args, **kwargs):
+    pass
 
 if __name__ == '__main__':
+    import warnings
+
+    warnings.warn = warn
 
     # parse cmd args
     parser = argparse.ArgumentParser(
