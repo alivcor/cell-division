@@ -9,6 +9,7 @@ The Journal of Machine Learning Research 11 (2010): 1109-1135.
 
 from __future__ import division
 import numpy as np
+from glob import glob
 from sklearn.base import BaseEstimator
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -19,6 +20,8 @@ import cv2
 from sys import stdout
 import voc_preprocessor
 from voc_preprocessor import countObjects, generateFileIDs
+from os import listdir
+from os.path import isfile, join
 
 def snorm(x):
     """Dot product based squared Euclidean norm implementation
@@ -295,45 +298,78 @@ def resizeImage(image_matrix):
 
 
 
+def fetch_files(file_path):
+    image_files = []
+    file_names = glob.glob(file_path)
+    for file_name in file_names:
+        image_files.append(resizeImage(cv2.imread(file_name)))
+    return image_files
+
+
+def getFiles(path):
+    """
+    - returns  a dictionary of all files
+    having key => value as  objectname => image path
+
+    - returns total number of files.
+
+    """
+    imlist = {}
+    count = 0
+    for each in glob(path + "*"):
+        word = each.split("/")[-1]
+        print " #### Reading image category ", word, " ##### "
+        imlist[word] = []
+        for imagefile in glob(path + word + "/*"):
+            print "Reading file ", imagefile
+            im = cv2.imread(imagefile, 0)
+            imlist[word].append(im)
+            count += 1
+
+    return [imlist, count]
+
 
 def cells_main():
     """Function for cells data"""
 
-    IMAGE_PATH = "../images/train/"
+    TRAIN_PATH = "../images/large_set/train/"
+    TEST_PATH = "../images/large_set/test/"
 
     NUM_PIXELS = 50 * 50
 
-    dog_train_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "dog", "train")
-    dog_val_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "dog", "val")
-    cat_train_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "cat", "train")
-    cat_val_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "cat", "val")
-    # X_train = np.zeros((len(filtered_ids), ))
+    train_files, num_files_train = getFiles(TRAIN_PATH)
+    test_files, num_files_test = getFiles(TEST_PATH)
 
-    X_train = np.zeros((4, NUM_PIXELS))
-    y_train = np.array([1, 0, 1, 0])
-    X_test = np.zeros((4, NUM_PIXELS))
-    y_test = np.array([0, 1, 0, 1])
+    X_train = np.zeros((num_files_train, NUM_PIXELS))
+    y_train = []
+    X_test = np.zeros((num_files_test, NUM_PIXELS))
+    y_test = []
 
-    dog1 = resizeImage(cv2.imread(IMAGE_PATH + dog_train_ids[0] + ".jpg"))
-    dog2 = resizeImage(cv2.imread(IMAGE_PATH + dog_train_ids[1] + ".jpg"))
-    dog3 = resizeImage(cv2.imread(IMAGE_PATH + dog_val_ids[0] + ".jpg"))
-    dog4 = resizeImage(cv2.imread(IMAGE_PATH + dog_val_ids[1] + ".jpg"))
+    tcount = -1
+    for i in range(len(train_files)):
+        image_category_chunk = train_files[str(i+1)]
+        for j in range(0,len(image_category_chunk)):
+            single_image = image_category_chunk[j]
+            tcount = tcount + 1
+            X_train[tcount, :] = (resizeImage(single_image)).flatten()[0:NUM_PIXELS]
+            y_train.append(i + 1)
+            # print i,j,tcount
 
-    cat1 = resizeImage(cv2.imread(IMAGE_PATH + cat_train_ids[0] + ".jpg"))
-    cat2 = resizeImage(cv2.imread(IMAGE_PATH + cat_train_ids[1] + ".jpg"))
-    cat3 = resizeImage(cv2.imread(IMAGE_PATH + cat_val_ids[0] + ".jpg"))
-    cat4 = resizeImage(cv2.imread(IMAGE_PATH + cat_val_ids[1] + ".jpg"))
+    tcount = -1
+    for i in range(len(test_files)):
+        image_category_chunk = test_files[str(i + 1)]
+        for j in range(0, len(image_category_chunk)):
+            single_image = image_category_chunk[j]
+            tcount = tcount + 1
+            X_test[tcount, :] = (resizeImage(single_image)).flatten()[0:NUM_PIXELS]
+            y_test.append(i+1)
+            # print i, j, tcount
 
-    # print dog2.flatten().shape
-    X_train[0, :] = dog1.flatten()[0:NUM_PIXELS]
-    X_train[1, :] = cat1.flatten()[0:NUM_PIXELS]
-    X_train[2, :] = dog2.flatten()[0:NUM_PIXELS]
-    X_train[3, :] = cat2.flatten()[0:NUM_PIXELS]
+    y_train = np.array(y_train)
+    y_test = np.array(y_test)
 
-    X_test[0, :] = dog3.flatten()[0:NUM_PIXELS]
-    X_test[1, :] = cat3.flatten()[0:NUM_PIXELS]
-    X_test[2, :] = dog4.flatten()[0:NUM_PIXELS]
-    X_test[3, :] = cat4.flatten()[0:NUM_PIXELS]
+    print X_train.shape, X_test.shape, y_train.shape, y_test.shape
+    # exit(0)
 
     print("\n\nX_train.shape : " + str(X_train.shape) + "\n" + "X_test.shape : " + str(
         X_test.shape) + "\n" + "y_train.shape : " + str(y_train.shape) + "\n" + "y_test.shape : " + str(y_test.shape))
@@ -341,16 +377,15 @@ def cells_main():
     # exit(0)
 
     print "Reached 1"
-    # model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis/oasis_test").fit(X_train, y_train, verbose=True)
-    # model = Oasis()
+    # model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis_model_cells").fit(X_train, y_train, verbose=True)
 
-    model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis_model_cells")
+    model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis_model_cells2")
 
     # model_pkl = gzip.open('oasis/oasis_test/model0010.pklz', 'rb')
     # # with open('oasis/oasis_test/model0010.pklz', 'rb') as fid:
     # model = pickle.load(model_pkl)
 
-    # model.read_snapshot("oasis/oasis_test/model0010.pklz")
+    model.read_snapshot("oasis_model_cells/model0010.pklz")
 
     errrate, labels = model.predict(X_test, X_train, y_test, y_train, maxk=2)
 
@@ -373,80 +408,81 @@ def cells_main():
 
 
 
+#
+# def dog_cat_main():
+#     # from sklearn import datasets
+#     # digits = datasets.load_digits()
+#     #
+#     # X_train = digits.data[500:] / 16
+#     # X_test = digits.data[:500] / 16
+#     # y_train = digits.target[500:]
+#     # y_test = digits.target[:500]
+#
+#     DATASET_CLASS_PATH = "VOC2007/ImageSets/Main/"
+#     DATASET_ANNOTATIONS_PATH = "VOC2007/Annotations/"
+#     IMAGE_PATH = "VOC2007/JPEGImages/"
+#     NUM_PIXELS = 50 * 50
+#     dog_train_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "dog", "train")
+#     dog_val_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "dog", "val")
+#     cat_train_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "cat", "train")
+#     cat_val_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "cat", "val")
+#     # X_train = np.zeros((len(filtered_ids), ))
+#
+#     X_train = np.zeros((4, NUM_PIXELS))
+#     y_train = np.array([1, 0, 1, 0])
+#     X_test = np.zeros((4, NUM_PIXELS))
+#     y_test = np.array([0, 1, 0, 1])
+#
+#     dog1 = resizeImage(cv2.imread(IMAGE_PATH + dog_train_ids[0] + ".jpg"))
+#     dog2 = resizeImage(cv2.imread(IMAGE_PATH + dog_train_ids[1] + ".jpg"))
+#     dog3 = resizeImage(cv2.imread(IMAGE_PATH + dog_val_ids[0] + ".jpg"))
+#     dog4 = resizeImage(cv2.imread(IMAGE_PATH + dog_val_ids[1] + ".jpg"))
+#
+#     cat1 = resizeImage(cv2.imread(IMAGE_PATH + cat_train_ids[0] + ".jpg"))
+#     cat2 = resizeImage(cv2.imread(IMAGE_PATH + cat_train_ids[1] + ".jpg"))
+#     cat3 = resizeImage(cv2.imread(IMAGE_PATH + cat_val_ids[0] + ".jpg"))
+#     cat4 = resizeImage(cv2.imread(IMAGE_PATH + cat_val_ids[1] + ".jpg"))
+#
+#     # print dog2.flatten().shape
+#     X_train[0, :] = dog1.flatten()[0:NUM_PIXELS]
+#     X_train[1, :] = cat1.flatten()[0:NUM_PIXELS]
+#     X_train[2, :] = dog2.flatten()[0:NUM_PIXELS]
+#     X_train[3, :] = cat2.flatten()[0:NUM_PIXELS]
+#
+#     X_test[0, :] = dog3.flatten()[0:NUM_PIXELS]
+#     X_test[1, :] = cat3.flatten()[0:NUM_PIXELS]
+#     X_test[2, :] = dog4.flatten()[0:NUM_PIXELS]
+#     X_test[3, :] = cat4.flatten()[0:NUM_PIXELS]
+#
+#
+#     print("\n\nX_train.shape : " + str(X_train.shape) + "\n" + "X_test.shape : " + str(X_test.shape) + "\n" + "y_train.shape : " + str(y_train.shape) + "\n" + "y_test.shape : " + str(y_test.shape))
+#     # print(X_train[0].shape)
+#     # exit(0)
+#
+#     print "Reached 1"
+#     # model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis/oasis_test").fit(X_train, y_train, verbose=True)
+#     # model = Oasis()
+#
+#     model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis/oasis_test_cells")
+#
+#     # model_pkl = gzip.open('oasis/oasis_test/model0010.pklz', 'rb')
+#     # # with open('oasis/oasis_test/model0010.pklz', 'rb') as fid:
+#     # model = pickle.load(model_pkl)
+#
+#     # model.read_snapshot("oasis/oasis_test/model0010.pklz")
+#
+#     errrate, labels = model.predict(X_test, X_train, y_test, y_train, maxk=2)
+#
+#     print labels
+#     print "Min error rate: %6.4f at k=%d" % (min(errrate), np.argmin(errrate) + 1)
+#
+#     plt.figure()
+#     plt.plot(errrate)
+#
+#     n_features = X_train.shape[1]
+#     W = model._weights.view()
+#     W.shape = (n_features, n_features)
+#
+#     # print W[0:5, 0:5]
 
-def dog_cat_main():
-    # from sklearn import datasets
-    # digits = datasets.load_digits()
-    #
-    # X_train = digits.data[500:] / 16
-    # X_test = digits.data[:500] / 16
-    # y_train = digits.target[500:]
-    # y_test = digits.target[:500]
-
-    DATASET_CLASS_PATH = "VOC2007/ImageSets/Main/"
-    DATASET_ANNOTATIONS_PATH = "VOC2007/Annotations/"
-    IMAGE_PATH = "VOC2007/JPEGImages/"
-    NUM_PIXELS = 50 * 50
-    dog_train_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "dog", "train")
-    dog_val_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "dog", "val")
-    cat_train_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "cat", "train")
-    cat_val_ids = voc_preprocessor.preprocessData(DATASET_CLASS_PATH, DATASET_ANNOTATIONS_PATH, "cat", "val")
-    # X_train = np.zeros((len(filtered_ids), ))
-
-    X_train = np.zeros((4, NUM_PIXELS))
-    y_train = np.array([1, 0, 1, 0])
-    X_test = np.zeros((4, NUM_PIXELS))
-    y_test = np.array([0, 1, 0, 1])
-
-    dog1 = resizeImage(cv2.imread(IMAGE_PATH + dog_train_ids[0] + ".jpg"))
-    dog2 = resizeImage(cv2.imread(IMAGE_PATH + dog_train_ids[1] + ".jpg"))
-    dog3 = resizeImage(cv2.imread(IMAGE_PATH + dog_val_ids[0] + ".jpg"))
-    dog4 = resizeImage(cv2.imread(IMAGE_PATH + dog_val_ids[1] + ".jpg"))
-
-    cat1 = resizeImage(cv2.imread(IMAGE_PATH + cat_train_ids[0] + ".jpg"))
-    cat2 = resizeImage(cv2.imread(IMAGE_PATH + cat_train_ids[1] + ".jpg"))
-    cat3 = resizeImage(cv2.imread(IMAGE_PATH + cat_val_ids[0] + ".jpg"))
-    cat4 = resizeImage(cv2.imread(IMAGE_PATH + cat_val_ids[1] + ".jpg"))
-
-    # print dog2.flatten().shape
-    X_train[0, :] = dog1.flatten()[0:NUM_PIXELS]
-    X_train[1, :] = cat1.flatten()[0:NUM_PIXELS]
-    X_train[2, :] = dog2.flatten()[0:NUM_PIXELS]
-    X_train[3, :] = cat2.flatten()[0:NUM_PIXELS]
-
-    X_test[0, :] = dog3.flatten()[0:NUM_PIXELS]
-    X_test[1, :] = cat3.flatten()[0:NUM_PIXELS]
-    X_test[2, :] = dog4.flatten()[0:NUM_PIXELS]
-    X_test[3, :] = cat4.flatten()[0:NUM_PIXELS]
-
-
-    print("\n\nX_train.shape : " + str(X_train.shape) + "\n" + "X_test.shape : " + str(X_test.shape) + "\n" + "y_train.shape : " + str(y_train.shape) + "\n" + "y_test.shape : " + str(y_test.shape))
-    # print(X_train[0].shape)
-    # exit(0)
-
-    print "Reached 1"
-    # model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis/oasis_test").fit(X_train, y_train, verbose=True)
-    # model = Oasis()
-
-    model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis/oasis_test_cells")
-
-    # model_pkl = gzip.open('oasis/oasis_test/model0010.pklz', 'rb')
-    # # with open('oasis/oasis_test/model0010.pklz', 'rb') as fid:
-    # model = pickle.load(model_pkl)
-
-    # model.read_snapshot("oasis/oasis_test/model0010.pklz")
-
-    errrate, labels = model.predict(X_test, X_train, y_test, y_train, maxk=2)
-
-    print labels
-    print "Min error rate: %6.4f at k=%d" % (min(errrate), np.argmin(errrate) + 1)
-
-    plt.figure()
-    plt.plot(errrate)
-
-    n_features = X_train.shape[1]
-    W = model._weights.view()
-    W.shape = (n_features, n_features)
-
-    # print W[0:5, 0:5]
-
+cells_main()

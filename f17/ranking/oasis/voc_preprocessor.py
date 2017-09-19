@@ -32,7 +32,7 @@ def preprocessData(dataset_class_path, dataset_annotations_path, class_type, dat
     dataset_class_path = dataset_class_path + class_type + "_" + data_type + ".txt"
     return countObjects(generateFileIDs(dataset_class_path), dataset_annotations_path)
 
-dataset_class_path = "VOC2007/ImageSets/Main/"
-dataset_annotations_path = "VOC2007/Annotations/"
-
-print preprocessData(dataset_class_path, dataset_annotations_path, "cat", "train")
+# dataset_class_path = "VOC2007/ImageSets/Main/"
+# dataset_annotations_path = "VOC2007/Annotations/"
+#
+# print preprocessData(dataset_class_path, dataset_annotations_path, "cat", "train")
