@@ -17,6 +17,7 @@ import cPickle as pickle
 import os
 import gzip
 import cv2
+from random import randint
 from sys import stdout
 import voc_preprocessor
 from voc_preprocessor import countObjects, generateFileIDs
@@ -238,6 +239,57 @@ class Oasis(BaseEstimator):
 
         return self
 
+
+    def getFarthestLabels(self, X_test, X_train, y_train, maxk=200):
+        '''
+        Evaluate an OASIS model by KNN classification
+        Examples are in rows
+        '''
+
+        W = self._weights.view()
+        W.shape = (np.int(np.sqrt(W.shape[0])), np.int(np.sqrt(W.shape[0])))
+
+        maxk = min(maxk, X_train.shape[0])  # K can't be > numcases in X_train
+
+        numqueries = X_test.shape[0]
+
+        precomp = np.dot(W, X_train.T)
+
+        # compute similarity scores
+        s = np.dot(X_test, precomp)
+
+        # argsort sorts in ascending order
+        # so we need to reverse the second dimension
+        ind = np.argsort(s, axis=1)[:, ::-1]
+
+        # Voting based on nearest neighbours
+        # make sure it is int
+
+        # Newer version of ndarray.astype takes a copy keyword argument
+        # With this, we won't have to check
+        if y_train.dtype.kind != 'int':
+            queryvotes = y_train[ind[:, :maxk]].astype('int')
+        else:
+            queryvotes = y_train[ind[:, :maxk]]
+
+        errsum = np.empty((maxk,))
+
+        for kk in xrange(maxk):
+            # AFAIK bincount only works on vectors
+            # so we must loop here over data items
+            anti_labels = np.empty((numqueries,), dtype='int')
+            for i in xrange(numqueries):
+                b = np.bincount(queryvotes[i, :kk + 1])
+                anti_labels[i] = -1*b[int(y_train)-1]  # get (anti)-distance value from the current experiment class
+
+            # errors = anti_labels != y_test
+            # errsum[kk] = sum(errors)
+
+        # print("y_test : " + str(y_test) + " \n labels : " + str(labels))
+        # errrate = errsum / numqueries
+        return anti_labels
+
+
     def predict(self, X_test, X_train, y_test, y_train, maxk=200):
         '''
         Evaluate an OASIS model by KNN classification
@@ -306,6 +358,7 @@ def fetch_files(file_path):
     return image_files
 
 
+
 def getFiles(path):
     """
     - returns  a dictionary of all files
@@ -327,6 +380,66 @@ def getFiles(path):
             count += 1
 
     return [imlist, count]
+
+
+def getNextImage(train_image, X_test, num_options, NUM_PIXELS, current_image_exp_num, iteration):
+
+    #train is only current image
+    X_train = np.zeros((1, NUM_PIXELS))
+    y_train = np.array([str(current_image_exp_num+1)])
+
+
+    X_train[0, :] = (resizeImage(train_image)).flatten()[0:NUM_PIXELS]
+
+    if(iteration == 0):
+        model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis_walk_model_" + str(iteration))\
+                        .fit(X_train, y_train,verbose=True)
+    else:
+        model = Oasis(n_iter=1000, do_psd=True, psd_every=3, save_path="oasis_walk_model_" + str(iteration))
+        model.read_snapshot("oasis_walk_model_" + str(iteration-1) + "/model0010.pklz")
+        model.fit(X_train, y_train,verbose=True)
+
+    distances = model.getFarthestLabels(X_test, X_train, y_train, maxk=6)
+    return np.argmax(distances)
+
+
+
+def image_walk():
+    current_image_exp_num = randint(0, 6)
+
+    TRAIN_PATH = "../images/large_set/train/"
+    TEST_PATH = "../images/large_set/test/"
+
+    NUM_PIXELS = 50 * 50
+    cnt = 0
+
+    # train_files, num_files_train = getFiles(TRAIN_PATH)
+    next_image_options, num_options = getFiles(TRAIN_PATH)
+
+    # test is all images
+    X_test = np.zeros((num_options, NUM_PIXELS))
+    y_test = []
+
+    current_train_image = next_image_options[str(current_image_exp_num)][0]
+
+
+    tcount = -1
+    for i in range(len(next_image_options)):
+        image_category_chunk = next_image_options[str(i + 1)]
+        for j in range(0, len(image_category_chunk)):
+            single_image = image_category_chunk[j]
+            tcount = tcount + 1
+            X_test[tcount, :] = (resizeImage(single_image)).flatten()[0:NUM_PIXELS]
+            y_test.append(i+1)
+            # print i, j, tcount
+
+
+    while(cnt < 10):
+        next_exp_num = getNextImage(current_train_image, next_image_options, num_options, NUM_PIXELS, current_image_exp_num, cnt)
+        print "Suggested Next Image Number : " + next_exp_num
+        current_image_exp_num = next_exp_num
+        current_train_image = train_files[str(next_exp_num)][0]
+        cnt = cnt+1
 
 
 def cells_main():
@@ -485,4 +598,4 @@ def cells_main():
 #
 #     # print W[0:5, 0:5]
 
-cells_main()
+# cells_main()
